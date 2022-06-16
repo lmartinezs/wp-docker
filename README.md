@@ -1,7 +1,7 @@
 # wp-docker
 
 Install wordpress with docker containers.
-Declare settings in .env file
+Set settings in .env file
 
 images:
 wordpress:fpm
