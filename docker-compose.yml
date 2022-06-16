@@ -1,0 +1,125 @@
+version: "3.1"
+services:
+  wordpress:
+    image: wordpress:fpm
+    restart: always
+    environment:
+      WORDPRESS_DB_HOST: db:3306
+      WORDPRESS_DB_USER: ${WORDPRESS_DB_USER}
+      WORDPRESS_DB_PASSWORD: ${WORDPRESS_DB_PASSWORD}
+      WORDPRESS_DB_NAME: ${WORDPRESS_DB_NAME}
+
+    volumes:
+      - wordpress:/var/www/html
+      - ${PWD}/web/themes:/var/www/html/wp-content/themes/:rw
+      - ${PWD}/web/plugins:/var/www/html/wp-content/plugins/:rw
+      - ${PWD}/web/uploads:/var/www/html/wp-content/uploads/:rw
+    logging:
+        driver: "json-file"
+        options:
+            max-file: "5"
+            max-size: "10m"
+    depends_on:
+      - db
+
+    deploy:
+      resources:
+        limits:
+          cpus: '0.50'
+          memory: 2000M
+      mode: replicated
+      replicas: 1
+
+  nginx:
+    image: nginx
+    ports:
+      - 80:80
+    volumes:
+      - ./conf/${WORDPRESS_DOMAIN}.conf:/etc/nginx/conf.d/${WORDPRESS_DOMAIN}.conf
+      - wordpress:/var/www/html
+      - ${PWD}/web/themes:/var/www/html/wp-content/themes/
+      - ${PWD}/web/plugins:/var/www/html/wp-content/plugins/
+      - ${PWD}/web/uploads:/var/www/html/wp-content/uploads/
+    depends_on:
+      - wordpress
+    logging:
+        driver: "json-file"
+        options:
+            max-file: "5"
+            max-size: "10m"
+
+  db:
+    image: mysql:5.7
+    restart: always
+    environment:
+      MYSQL_DATABASE: ${WORDPRESS_DB_NAME}
+      MYSQL_USER: ${WORDPRESS_DB_USER}
+      MYSQL_PASSWORD: ${WORDPRESS_DB_PASSWORD}
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
+    volumes:
+      - db:/var/lib/mysql
+      - ${PWD}/shared-data:/var/shared-data
+    logging:
+        driver: "json-file"
+        options:
+            max-file: "5"
+            max-size: "10m"
+
+  adminer:
+    image: adminer
+    restart: always
+    ports:
+        - 10000:8080
+    logging:
+        driver: "json-file"
+        options:
+            max-file: "5"
+            max-size: "10m"
+  wordpress-cli:
+    depends_on:
+      - db
+      - wordpress
+    image: wordpress:cli
+    env_file: .env
+    # vstm: This is required to run wordpress-cli with the same
+    # user-id as wordpress. This way there are no permission problems
+    # when running the cli
+    user: xfs
+    environment:
+      WORDPRESS_DB_HOST: db:3306
+      WORDPRESS_DB_NAME: ${WORDPRESS_DB_NAME}
+      WORDPRESS_DB_USER: ${WORDPRESS_DB_USER}
+      WORDPRESS_DB_PASSWORD: ${WORDPRESS_DB_PASSWORD}
+      WORDPRESS_TITLE: ${WORDPRESS_TITLE}
+      WORDPRESS_ADMIN_USER: ${WORDPRESS_ADMIN_USER}
+      WORDPRESS_ADMIN_PASSWORD: ${WORDPRESS_ADMIN_PASSWORD}
+      WORDPRESS_ADMIN_EMAIL: ${WORDPRESS_ADMIN_EMAIL}
+      WORDPRESS_PERMALINK_STRUCTURE: ${WORDPRESS_PERMALINK_STRUCTURE}
+      WORDPRESS_THEME_TO_INSTALL: ${WORDPRESS_THEME_TO_INSTALL}
+      WORDPRESS_PLUGINS_TO_INSTALL: ${WORDPRESS_PLUGINS_TO_INSTALL}
+      WP_CLI_CACHE_DIR: ${WP_CLI_CACHE_DIR}
+      WORDPRESS_DOMAIN: ${WORDPRESS_DOMAIN}
+    command: >
+      /wait-for-mysql.sh
+      /install-wp.sh
+    #wp core install
+    #--path="/var/www/html"
+    #--url="http://inexpresivo.com"
+    #--title="Site-exmplae"
+    #--admin_user=admin
+    #--admin_password=admin
+    #--admin_email=foio@bar.com
+    #--skip-email
+    # vstm: add shared volume
+    volumes:
+      - ./bin/wait-for-mysql.sh:/wait-for-mysql.sh:ro
+      - ./bin/install-wp.sh:/install-wp.sh:ro
+      - wordpress:/var/www/html:rw
+      - ${PWD}/web/themes:/var/www/html/wp-content/themes/:rw
+      - ${PWD}/web/plugins:/var/www/html/wp-content/plugins/:rw
+      - ${PWD}/web/uploads:/var/www/html/wp-content/uploads/:rw   
+    #- ./bin/install-wp.sh:/usr/local/bin/install-wp:ro
+            
+volumes:
+  wordpress:
+  db:
