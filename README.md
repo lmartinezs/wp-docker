@@ -16,6 +16,6 @@ wp_cli
 - sh install.sh
 
 # Open on browser:
-- add to /etc/hosts a line with: 127.0.0.1 www.domain.com
-- www.domain.com  #domain declarated on .env file
+- add to /etc/hosts a line with: 127.0.0.1 www.wpexample.com
+- www.wpexample.com  #domain declarated on .env file
 - localhost:10000 #adminer app
