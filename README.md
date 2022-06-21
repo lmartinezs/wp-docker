@@ -3,11 +3,11 @@
 Install wordpress with docker containers.
 Set settings in .env file
 
-images:
-wordpress:fpm
-adminer
-nginx
-wp_cli
+# images:
+- wordpress:fpm
+- adminer
+- nginx
+- wp_cli
 
 # How to install
 - git clone https://github.com/lmartinezs/wp-docker.git
